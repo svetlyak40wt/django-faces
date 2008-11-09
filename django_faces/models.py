@@ -21,7 +21,9 @@ from django.utils.translation import ugettext_lazy as _
 from django.conf import settings
 from django.contrib.sites.models import Site
 
-from gallery.templatetags.gallery_tags import makeThumb
+from utils import makeThumb
+from django_faces.settings import *
+
 
 logger = logging.getLogger('avatars.models')
 
@@ -34,9 +36,6 @@ def log_exceptions(f):
             raise
     return _log
 
-default_avatar = getattr(settings, 'DEFAULT_AVATAR', None)
-if default_avatar is not None:
-    default_avatar = settings.MEDIA_URL + default_avatar
 
 class CacheState(models.Model):
     hash = models.CharField( _('Hash'), max_length=32, unique = True)
@@ -45,19 +44,14 @@ class CacheState(models.Model):
 
     def save(self):
         if self.expire_after is None:
-            self.expire_after = datetime.datetime.today() + datetime.timedelta(settings.AVATARS_CACHE_DAYS)
+            self.expire_after = datetime.datetime.today() + datetime.timedelta(AVATARS_CACHE_DAYS)
         return super(CacheState, self).save()
-
-def get_self_pavatar_url():
-    return urlparse.urljoin(
-        settings.MEDIA_URL,
-        settings.AUTHOR_AVATAR)
 
 @log_exceptions
 def get_pavatar(cache, site):
     logger.info('Getting avatar for site ' + site)
     cache.enabled = False
-    cache.expire_after = datetime.datetime.today() + datetime.timedelta(settings.AVATARS_CACHE_DAYS)
+    cache.expire_after = datetime.datetime.today() + datetime.timedelta(AVATARS_CACHE_DAYS)
 
     if site is None or site == '':
         cache.save()
@@ -67,7 +61,11 @@ def get_pavatar(cache, site):
 
     if site.startswith('http://%s' % Site.objects.get_current().domain):
         try:
-            pavatar = urllib2.urlopen(get_self_pavatar_url())
+            if DONT_FETCH_LOCAL_AVATARS:
+                return None
+
+            if AUTHOR_AVATAR:
+                pavatar = urllib2.urlopen(AUTHOR_AVATAR)
         except urllib2.URLError, e:
             logger.error(e)
             cache.save()
@@ -119,7 +117,7 @@ def get_pavatar(cache, site):
                 pass
 
     if pavatar:
-        path = os.path.join(settings.MEDIA_ROOT, settings.AVATARS_CACHE_DIR)
+        path = os.path.join(settings.MEDIA_ROOT, AVATARS_CACHE_DIR)
         if not os.path.exists(path):
             os.makedirs(path)
         file = open(os.path.join(path, cache.hash), 'wb')
@@ -134,7 +132,7 @@ def get_pavatar(cache, site):
                 return
 
             orig_format = image.format
-            thumb, resized = makeThumb(image, (settings.AVATAR_SIZE, settings.AVATAR_SIZE))
+            thumb, resized = makeThumb(image, AVATAR_SIZE)
             try:
                 thumb.save(file, orig_format)
             except Exception, e:
@@ -161,15 +159,15 @@ def get_avatar_url(email, site):
         get_pavatar(cache, site)
 
     if cache.enabled:
-        return urlparse.urljoin(settings.MEDIA_URL, '/'.join((settings.AVATARS_CACHE_DIR, hash)))
+        return urlparse.urljoin(settings.MEDIA_URL, os.path.join(AVATARS_CACHE_DIR, hash))
     else:
         gravatar_options = {
                 'gravatar_id': md5(
                     email.lower()).hexdigest(),
-                'size': str(settings.AVATAR_SIZE)
+                'size': str(AVATAR_SIZE[0])
         }
-        if default_avatar is not None:
-            gravatar_options['default'] = default_avatar
+        if DEFAULT_AVATAR is not None:
+            gravatar_options['default'] = DEFAULT_AVATAR
 
         return 'http://www.gravatar.com/avatar.php?%s' % \
                 urllib.urlencode(gravatar_options)
