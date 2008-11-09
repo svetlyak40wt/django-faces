@@ -4,8 +4,6 @@ def makeThumb(image, maxSize, method = 3):
     'Resize PIL image, to fit into the maxSize'
 
     orig_size = image.size
-    import logging
-    logging.error( repr(orig_size) )
     if orig_size[0] > maxSize[0] or orig_size[1] > maxSize[1]:
         min_extent = min( orig_size[0], orig_size[1] )
         left = (orig_size[0] - min_extent) / 2 

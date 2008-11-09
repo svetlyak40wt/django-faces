@@ -2,18 +2,20 @@ django-faces
 ------------
 
 This application uses Pavatar protocol (http://pavatar.com/spec/) to
-show avatar for web site, or fall back to the Gravatar (http://gravatar.com),
-which need a commenter's email.
+show avatar for web site, or fall back to the Favicon or Gravatar
+(http://gravatar.com), which need a commenter's email.
 
-If Pavatar and Gravatar not enabled for 'email' and 'site', then algorithm
-fall back to the default avatar image, which you can specify using
-`DEFAULT_AVATAR` option in the settings.py.
+If niether Pavatar, Favicon or Gravatar are not enabled for 'email'
+and 'site', then algorithm fall back to the default avatar image,
+which you can specify using `DEFAULT_AVATAR` option in the settings.py.
 
 All pavatars are cached during specified time period. Gravatars' caching
 is not realized yet.
 
 Dependencies
 ============
+
+This application depends on PIL -- Python Image Library.
 
 Installation
 ============

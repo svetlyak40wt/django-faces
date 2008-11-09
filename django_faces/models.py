@@ -7,6 +7,7 @@ import urllib2
 import urlparse
 import os
 import logging
+from functools import wraps
 from pdb import set_trace
 
 import Image
@@ -27,14 +28,15 @@ from django_faces.settings import *
 
 logger = logging.getLogger('avatars.models')
 
-def log_exceptions(f):
-    def _log(*args, **kwargs):
+def log_exceptions(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
         try:
-            return f(*args, **kwargs)
+            return func(*args, **kwargs)
         except Exception, e:
-            logger.debug(e)
+            logger.exception('Exception during execution of %r' % func.__name__)
             raise
-    return _log
+    return wrapper
 
 
 class CacheState(models.Model):
@@ -59,14 +61,7 @@ class CacheState(models.Model):
 @log_exceptions
 def get_pavatar(cache, site):
     logger.info('Getting avatar for site ' + site)
-    cache.enabled = False
-    cache.expire_after = datetime.datetime.today() + datetime.timedelta(AVATARS_CACHE_DAYS)
-
-    if site is None or site == '':
-        cache.save()
-        return
-
-    pavatar = None
+    avatar = None
 
     if site.startswith('http://%s' % Site.objects.get_current().domain):
         try:
@@ -74,13 +69,13 @@ def get_pavatar(cache, site):
                 return None
 
             if AUTHOR_AVATAR:
-                pavatar = urllib2.urlopen(AUTHOR_AVATAR)
+                avatar = urllib2.urlopen(AUTHOR_AVATAR)
         except urllib2.URLError, e:
             logger.error(e)
             cache.save()
             return
 
-    if pavatar is None:
+    if avatar is None:
         try:
             source = urllib2.urlopen(site)
         except Exception, e:
@@ -90,7 +85,7 @@ def get_pavatar(cache, site):
 
         try:
             url = source.info()['X-Pavatar']
-            pavatar = urllib2.urlopen(url)
+            avatar = urllib2.urlopen(url)
         except (KeyError, urllib2.URLError):
             if source.info().subtype == 'html':
                 regex = re.compile('<link rel="pavatar" href="([^"]+)" ?/?>', re.I)
@@ -100,14 +95,14 @@ def get_pavatar(cache, site):
                         if m != None:
                             url = m.group(1)
                             try:
-                                pavatar = urllib2.urlopen(url)
+                                avatar = urllib2.urlopen(url)
                             except urllib2.URLError:
                                 pass
                             break
                 except socket.timeout:
                     pass
 
-    if pavatar is None:
+    if avatar is None:
         protocol, host, path, _, _  = urlparse.urlsplit(site)
         if path == '':
             path = '/'
@@ -117,25 +112,86 @@ def get_pavatar(cache, site):
                 path = path[:pos+1]
         url = urlparse.urlunsplit((protocol, host, path + 'pavatar.png', '', ''))
         try:
-            pavatar = urllib2.urlopen(url)
+            avatar = urllib2.urlopen(url)
         except urllib2.URLError:
             url = urlparse.urlunsplit((protocol, host, 'pavatar.png', '', ''))
             try:
-                pavatar = urllib2.urlopen(url)
+                avatar = urllib2.urlopen(url)
             except urllib2.URLError:
                 pass
 
-    if pavatar:
+    fetch_and_save_avatar(avatar, cache)
+
+
+@log_exceptions
+def get_favicon(cache, site):
+    logger.info('Getting favicon for site ' + site)
+    try:
+        source = urllib2.urlopen(site)
+    except Exception, e:
+        logger.error(e)
+        cache.save()
+        return
+
+    avatar = None
+
+    if source.info().subtype == 'html':
+        regex = re.compile('<link rel="icon" href="([^"]+)".*/?>', re.I)
+        try:
+            for line in source:
+                logging.getLogger('get_favicon').debug('searching link in line: %r' % line)
+                m = regex.search(line)
+                if m != None:
+                    url = m.group(1)
+                    if url:
+                        if not url.startswith('http'):
+                            url = urlparse.urljoin(site, url)
+
+                        try:
+                            avatar = urllib2.urlopen(url)
+                        except urllib2.URLError:
+                            pass
+                        break
+        except socket.timeout:
+            pass
+
+    if avatar is None:
+        protocol, host, path, _, _  = urlparse.urlsplit(site)
+        if path == '':
+            path = '/'
+        if path[-1] != '/':
+            pos = path.rfind('/')
+            if pos != -1:
+                path = path[:pos+1]
+
+        urls_to_try = (
+                urlparse.urlunsplit((protocol, host, path + 'favicon.png', '', '')),
+                urlparse.urlunsplit((protocol, host, path + 'favicon.ico', '', '')),
+                urlparse.urlunsplit((protocol, host, 'favicon.png', '', '')),
+                urlparse.urlunsplit((protocol, host, 'favicon.ico', '', '')),
+        )
+        for url in urls_to_try:
+            try:
+                avatar = urllib2.urlopen(url)
+                break
+            except urllib2.URLError:
+                pass
+
+    fetch_and_save_avatar(avatar, cache)
+
+@log_exceptions
+def fetch_and_save_avatar(avatar, cache):
+    if avatar:
         path = os.path.join(settings.MEDIA_ROOT, AVATARS_CACHE_DIR)
         if not os.path.exists(path):
             os.makedirs(path)
         file = open(os.path.join(path, cache.hash), 'wb')
         try:
-            data = StringIO(pavatar.read())
+            data = StringIO(avatar.read())
             try:
                 image = Image.open(data)
             except IOError, e:
-                logger.error('IOError when getting pavatar for %s: %s' \
+                logger.error('IOError when getting avatar for %s: %s' \
                         % (site, e))
                 cache.save()
                 return
@@ -149,11 +205,23 @@ def get_pavatar(cache, site):
             cache.enabled = True
         finally:
             file.close()
-
     cache.save()
 
 def gen_hash(email, site):
     return md5(email.lower() + site.lower()).hexdigest()
+
+def get_avatar(cache, site):
+    cache.enabled = False
+    cache.expire_after = None
+
+    if site is None or site == '':
+        cache.save()
+        return
+
+    get_pavatar(cache, site)
+    if not cache.enabled:
+        get_favicon(cache, site)
+
 
 def get_avatar_url(email, site):
     hash = gen_hash(email, site)
@@ -161,11 +229,11 @@ def get_avatar_url(email, site):
         cache = CacheState.objects.get(hash=hash)
         if cache.expire_after <= datetime.datetime.today():
             logger.debug('cache for email=%s, site=%s, hash=%s is expired' % (email, site, hash))
-            get_pavatar(cache, site)
+            get_avatar(cache, site)
 
     except CacheState.DoesNotExist:
         cache = CacheState(hash=hash)
-        get_pavatar(cache, site)
+        get_avatar(cache, site)
 
     if cache.enabled:
         return (urlparse.urljoin(settings.MEDIA_URL, os.path.join(AVATARS_CACHE_DIR, hash)), (cache.actual_width, cache.actual_height))
