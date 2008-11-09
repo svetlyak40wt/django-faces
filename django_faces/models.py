@@ -58,30 +58,20 @@ class CacheState(models.Model):
             self.expire_after = datetime.datetime.today() + datetime.timedelta(AVATARS_CACHE_DAYS)
         return super(CacheState, self).save()
 
-@log_exceptions
-def get_pavatar(cache, site):
-    logger.info('Getting avatar for site ' + site)
+
+def get_pavatar(site, email):
+    logger.info('Getting pavatar for site ' + site)
     avatar = None
 
     if site.startswith('http://%s' % Site.objects.get_current().domain):
-        try:
-            if DONT_FETCH_LOCAL_AVATARS:
-                return None
+        if DONT_FETCH_LOCAL_AVATARS:
+            return None
 
-            if AUTHOR_AVATAR:
-                avatar = urllib2.urlopen(AUTHOR_AVATAR)
-        except urllib2.URLError, e:
-            logger.error(e)
-            cache.save()
-            return
+        if AUTHOR_AVATAR:
+            avatar = urllib2.urlopen(AUTHOR_AVATAR)
 
     if avatar is None:
-        try:
-            source = urllib2.urlopen(site)
-        except Exception, e:
-            logger.error(e)
-            cache.save()
-            return
+        source = urllib2.urlopen(site)
 
         try:
             url = source.info()['X-Pavatar']
@@ -89,18 +79,16 @@ def get_pavatar(cache, site):
         except (KeyError, urllib2.URLError):
             if source.info().subtype == 'html':
                 regex = re.compile('<link rel="pavatar" href="([^"]+)" ?/?>', re.I)
-                try:
-                    for line in source:
-                        m = regex.search(line)
-                        if m != None:
-                            url = m.group(1)
-                            try:
-                                avatar = urllib2.urlopen(url)
-                            except urllib2.URLError:
-                                pass
-                            break
-                except socket.timeout:
-                    pass
+
+                for line in source:
+                    m = regex.search(line)
+                    if m != None:
+                        url = m.group(1)
+                        try:
+                            avatar = urllib2.urlopen(url)
+                        except urllib2.URLError:
+                            pass
+                        break
 
     if avatar is None:
         protocol, host, path, _, _  = urlparse.urlsplit(site)
@@ -110,28 +98,22 @@ def get_pavatar(cache, site):
             pos = path.rfind('/')
             if pos != -1:
                 path = path[:pos+1]
-        url = urlparse.urlunsplit((protocol, host, path + 'pavatar.png', '', ''))
-        try:
-            avatar = urllib2.urlopen(url)
-        except urllib2.URLError:
-            url = urlparse.urlunsplit((protocol, host, 'pavatar.png', '', ''))
+        urls_to_try = (
+            urlparse.urlunsplit((protocol, host, path + 'pavatar.png', '', '')),
+            urlparse.urlunsplit((protocol, host, 'pavatar.png', '', '')),
+        )
+        for url in urls_to_try:
             try:
                 avatar = urllib2.urlopen(url)
+                break
             except urllib2.URLError:
                 pass
+    return avatar
 
-    fetch_and_save_avatar(avatar, cache)
 
-
-@log_exceptions
-def get_favicon(cache, site):
+def get_favicon(site, email):
     logger.info('Getting favicon for site ' + site)
-    try:
-        source = urllib2.urlopen(site)
-    except Exception, e:
-        logger.error(e)
-        cache.save()
-        return
+    source = urllib2.urlopen(site)
 
     avatar = None
 
@@ -139,7 +121,6 @@ def get_favicon(cache, site):
         regex = re.compile('<link rel="icon" href="([^"]+)".*/?>', re.I)
         try:
             for line in source:
-                logging.getLogger('get_favicon').debug('searching link in line: %r' % line)
                 m = regex.search(line)
                 if m != None:
                     url = m.group(1)
@@ -176,10 +157,30 @@ def get_favicon(cache, site):
                 break
             except urllib2.URLError:
                 pass
+    return avatar
 
-    fetch_and_save_avatar(avatar, cache)
+def get_gravatar(site, email):
+    logger.info('Getting gravatar for email ' + email)
+    fake_url = 'http://example.com'
+    gravatar_options = {
+            'size': str(AVATAR_SIZE[0]),
+            'default': DEFAULT_GRAVATAR or fake_url,
+    }
+    hash = md5(email.lower()).hexdigest()
+    url = 'http://www.gravatar.com/avatar/%s?%s' % (hash, urllib.urlencode(gravatar_options))
 
-@log_exceptions
+    avatar = urllib2.urlopen(url)
+
+    if avatar and avatar.geturl() != fake_url:
+        return avatar
+    return None
+
+
+def get_default(site, email):
+    logger.info('Getting default avatar')
+    return DEFAULT_AVATAR and urllib2.urlopen(DEFAULT_AVATAR) or None
+
+
 def fetch_and_save_avatar(avatar, cache):
     if avatar:
         path = os.path.join(settings.MEDIA_ROOT, AVATARS_CACHE_DIR)
@@ -187,6 +188,7 @@ def fetch_and_save_avatar(avatar, cache):
             os.makedirs(path)
         file = open(os.path.join(path, cache.hash), 'wb')
         try:
+            logging.debug('retriving avatar from %r' % avatar.geturl())
             data = StringIO(avatar.read())
             try:
                 image = Image.open(data)
@@ -199,7 +201,8 @@ def fetch_and_save_avatar(avatar, cache):
             orig_format = image.format
             thumb, cache.size = makeThumb(image, AVATAR_SIZE)
             try:
-                thumb.save(file, orig_format)
+                logging.debug('original image format is %r, but I\'ll save it as PNG.' % orig_format)
+                thumb.save(file, 'PNG')
             except Exception, e:
                 logger.error(e)
             cache.enabled = True
@@ -207,10 +210,7 @@ def fetch_and_save_avatar(avatar, cache):
             file.close()
     cache.save()
 
-def gen_hash(email, site):
-    return md5(email.lower() + site.lower()).hexdigest()
-
-def get_avatar(cache, site):
+def get_avatar(cache, site, email):
     cache.enabled = False
     cache.expire_after = None
 
@@ -218,9 +218,27 @@ def get_avatar(cache, site):
         cache.save()
         return
 
-    get_pavatar(cache, site)
-    if not cache.enabled:
-        get_favicon(cache, site)
+    avatar_retrivers = {
+        'pavatar': get_pavatar,
+        'gravatar': get_gravatar,
+        'favicon': get_favicon,
+        'default': get_default,
+    }
+
+    logging.debug('Using following avatar discovery order: %r' % (AVATAR_DISCOVERY_ORDER,))
+    for retriver_name in AVATAR_DISCOVERY_ORDER:
+        try:
+            avatar = avatar_retrivers.get(retriver_name, get_default)(site, email)
+            if avatar:
+                fetch_and_save_avatar(avatar, cache)
+                if cache.enabled:
+                    return
+        except Exception:
+            logger.exception('exception during avatar retriving')
+
+
+def gen_hash(email, site):
+    return md5(email.lower() + site.lower()).hexdigest()
 
 
 def get_avatar_url(email, site):
@@ -229,25 +247,14 @@ def get_avatar_url(email, site):
         cache = CacheState.objects.get(hash=hash)
         if cache.expire_after <= datetime.datetime.today():
             logger.debug('cache for email=%s, site=%s, hash=%s is expired' % (email, site, hash))
-            get_avatar(cache, site)
+            get_avatar(cache, site, email)
 
     except CacheState.DoesNotExist:
         cache = CacheState(hash=hash)
-        get_avatar(cache, site)
+        get_avatar(cache, site, email)
 
     if cache.enabled:
         return (urlparse.urljoin(settings.MEDIA_URL, os.path.join(AVATARS_CACHE_DIR, hash)), (cache.actual_width, cache.actual_height))
-    else:
-        gravatar_options = {
-                'gravatar_id': md5(
-                    email.lower()).hexdigest(),
-                'size': str(AVATAR_SIZE[0])
-        }
-        if DEFAULT_AVATAR is not None:
-            gravatar_options['default'] = DEFAULT_AVATAR
-
-        return ('http://www.gravatar.com/avatar.php?%s' % \
-                urllib.urlencode(gravatar_options), AVATAR_SIZE)
 
 def comment_postsave(sender, instance):
     hash = gen_hash(instance.author_email, instance.author_site)

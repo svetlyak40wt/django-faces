@@ -31,11 +31,16 @@ Installation
 
         AUTHOR_AVATAR = 'images/author.jpg'          # site author's avatar
         DEFAULT_AVATAR = 'images/default_avatar.jpg' # default avatar image
+                                                     # it can be relative to MEDIA_URL
+                                                     # or absolute URL
         AVATARS_CACHE_DIR = 'cache/avatars'          # cache directory
         AVATARS_CACHE_DAYS = 1                       # how many days before
                                                      # another avatar check
         AVATAR_SIZE = 50                             # avatar's size in pixels,
                                                      # all images are resized to this size.
+        AVATAR_DISCOVERY_ORDER = \
+        ('pavatar', 'gravatar', 'favicon', 'default')
+        DEFAULT_GRAVATAR = None                      # also, it can be 'monsterid' or 'identicon' or 'wavatar'
 
 * Append `django_faces.middleware.XPavatar` line to the `MIDDLEWARE_CLASSES` to add X-Pavatar
   HTTP header or or use `{% pavatar_html_link %}` to your main template to add 'link' HTML element.
