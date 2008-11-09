@@ -17,7 +17,8 @@ def author_block():
 
 @register.inclusion_tag('avatars/avatar.html')
 def avatar(email, site):
+    url, size = get_avatar_url(email, site)
     return {
-        'url': get_avatar_url(email, site),
-        'size': AVATAR_SIZE,
+        'url': url,
+        'size': size,
     }

@@ -41,6 +41,15 @@ class CacheState(models.Model):
     hash = models.CharField( _('Hash'), max_length=32, unique = True)
     enabled = models.BooleanField(_("Pavatars enabled"), default=False)
     expire_after = models.DateTimeField(_("Cache expire date"))
+    actual_width = models.IntegerField(_('Actual avatar\'s width'), default = 0)
+    actual_height = models.IntegerField(_('Actual avatar\'s height'), default = 0)
+
+    def _get_size(self):
+        return (self.actual_width, self.actual_height)
+    def _set_size(self, size):
+        self.actual_width, self.actual_height = size
+
+    size = property(_get_size, _set_size)
 
     def save(self):
         if self.expire_after is None:
@@ -132,7 +141,7 @@ def get_pavatar(cache, site):
                 return
 
             orig_format = image.format
-            thumb, resized = makeThumb(image, AVATAR_SIZE)
+            thumb, cache.size = makeThumb(image, AVATAR_SIZE)
             try:
                 thumb.save(file, orig_format)
             except Exception, e:
@@ -159,7 +168,7 @@ def get_avatar_url(email, site):
         get_pavatar(cache, site)
 
     if cache.enabled:
-        return urlparse.urljoin(settings.MEDIA_URL, os.path.join(AVATARS_CACHE_DIR, hash))
+        return (urlparse.urljoin(settings.MEDIA_URL, os.path.join(AVATARS_CACHE_DIR, hash)), (cache.actual_width, cache.actual_height))
     else:
         gravatar_options = {
                 'gravatar_id': md5(
@@ -169,8 +178,8 @@ def get_avatar_url(email, site):
         if DEFAULT_AVATAR is not None:
             gravatar_options['default'] = DEFAULT_AVATAR
 
-        return 'http://www.gravatar.com/avatar.php?%s' % \
-                urllib.urlencode(gravatar_options)
+        return ('http://www.gravatar.com/avatar.php?%s' % \
+                urllib.urlencode(gravatar_options), AVATAR_SIZE)
 
 def comment_postsave(sender, instance):
     hash = gen_hash(instance.author_email, instance.author_site)
