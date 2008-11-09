@@ -57,3 +57,13 @@ It is called without any parameters:
 Use template tag `{% avatar email site %}` to create simple block with `<img src="" />`
 for the email's and site's owner.
 
+For example, I use following code, to show avatars on my site, which uses threaded comments and
+django-openid:
+
+    {% load faces_tags %}
+    <div class="b-avatar">
+        {% avatar comment.user.email comment.user.openids.get.openid %}
+    </div>
+
+Very simple, is't it?
+
