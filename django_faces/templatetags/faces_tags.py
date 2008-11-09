@@ -13,7 +13,11 @@ def pavatar_html_link():
 
 @register.inclusion_tag('avatars/author_block.html')
 def author_block():
-    return {'avatar_url': AUTHOR_AVATAR}
+    return {
+        'avatar_url': AUTHOR_AVATAR,
+        'author_name': AUTHOR_NAME,
+        'contacts_url': CONTACTS_URL,
+    }
 
 @register.inclusion_tag('avatars/avatar.html')
 def avatar(email, site):

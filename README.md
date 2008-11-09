@@ -50,7 +50,11 @@ for pavatar.
 This template tag can be used, to generate a simple HTML block with site's author's avatar.
 It is called without any parameters:
 
+    {% load faces_tags %}
     {% author_block %}
+
+You can overload `avatars/author_block.html` template, to modify look and feel of this block.
+This template's context contains following variables: `avatar_url`, `author_name` and `contacts_url`.
 
 ### avatar ###
 

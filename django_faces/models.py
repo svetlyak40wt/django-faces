@@ -41,7 +41,7 @@ def log_exceptions(func):
 
 class CacheState(models.Model):
     hash = models.CharField( _('Hash'), max_length=32, unique = True)
-    enabled = models.BooleanField(_("Pavatars enabled"), default=False)
+    enabled = models.BooleanField(_("Avatar enabled"), default=False)
     expire_after = models.DateTimeField(_("Cache expire date"))
     actual_width = models.IntegerField(_('Actual avatar\'s width'), default = 0)
     actual_height = models.IntegerField(_('Actual avatar\'s height'), default = 0)

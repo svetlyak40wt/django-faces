@@ -26,3 +26,5 @@ if isinstance(AVATAR_SIZE, int):
     AVATAR_SIZE = (AVATAR_SIZE, AVATAR_SIZE)
 
 AUTHOR_AVATAR = _get_url('AUTHOR_AVATAR')
+AUTHOR_NAME = getattr(settings, 'AUTHOR_NAME', None)
+CONTACTS_URL = getattr(settings, 'CONTACTS_URL', None)

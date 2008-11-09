@@ -1,6 +1,15 @@
 {% load i18n %}
 <p>{% trans 'Author' %}</p>
 <p class="b-avatar">
-    <a href="/blog/contacts/"><img src="{{avatar_url}}"/></a>
-    <a href="/blog/contacts/"><div>{% trans 'Big 40wt Svetlyak' %}</div></a>
+    {% if author_name and avatar_url %}
+        <a href="{{ contacts_url }}"><img src="{{ avatar_url }}"/></a>
+        <a href="{{ contacts_url }}"><div>{{ author_name }}</div></a>
+    {% else %}
+        {% trans 'Please setup following values in you settings.py:' %}
+        <ul>
+            <li>{% trans "AUTHOR_AVATAR, your avatar's URL." %}</li>
+            <li>{% trans "AUTHOR_NAME, your name or nickname." %}</li>
+            <li>{% trans "CONTACTS_URL, contasts pages's URL." %}</li>
+        </ul>
+    {% endif %}
 </p>
