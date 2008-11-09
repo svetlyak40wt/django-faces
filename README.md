@@ -29,13 +29,13 @@ Installation
 * Run `./manage.py syncdb` to create all neccessary tables.
 * Add these variables to the settings.py:
 
-    AUTHOR_AVATAR = 'images/author.jpg'          # site author's avatar
-    DEFAULT_AVATAR = 'images/default_avatar.jpg' # default avatar image
-    AVATARS_CACHE_DIR = 'cache/avatars'          # cache directory
-    AVATARS_CACHE_DAYS = 1                       # how many days before
-                                                 # another avatar check
-    AVATAR_SIZE = 50                             # avatar's size in pixels,
-                                                 # all images are resized to this size.
+     AUTHOR_AVATAR = 'images/author.jpg'          # site author's avatar
+     DEFAULT_AVATAR = 'images/default_avatar.jpg' # default avatar image
+     AVATARS_CACHE_DIR = 'cache/avatars'          # cache directory
+     AVATARS_CACHE_DAYS = 1                       # how many days before
+                                                  # another avatar check
+     AVATAR_SIZE = 50                             # avatar's size in pixels,
+                                                  # all images are resized to this size.
 
 * Append `django_faces.middleware.XPavatar` line to the `MIDDLEWARE_CLASSES` to add X-Pavatar
   HTTP header or or use `{% pavatar_html_link %}` to your main template to add 'link' HTML element.
