@@ -11,7 +11,7 @@ register = Library()
 def pavatar_html_link():
     return '<link rel="pavatar" href="%s" />' % AUTHOR_AVATAR
 
-@register.inclusion_tag('avatars/author_block.html')
+@register.inclusion_tag('faces/author_block.html')
 def author_block():
     return {
         'avatar_url': AUTHOR_AVATAR,
@@ -19,7 +19,7 @@ def author_block():
         'contacts_url': CONTACTS_URL,
     }
 
-@register.inclusion_tag('avatars/avatar.html')
+@register.inclusion_tag('faces/avatar.html')
 def avatar(email, site):
     url, size = get_avatar_url(email, site)
     return {

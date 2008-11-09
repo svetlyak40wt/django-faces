@@ -1,9 +1,14 @@
 django-faces
 ------------
 
-This application uses Pavatar protocol (http://pavatar.com/spec/) to
-show avatar for web site, or fall back to the Favicon or Gravatar
-(http://gravatar.com), which need a commenter's email.
+In opposite to [django-avatar][], this application does not allow
+users to upload their own pictures to the servers. Instead of this,
+django-faces tries to discover user's avatar using his site's URL or
+his email.
+
+
+Right now, django-faces can use [Pavatar protocol][pavatar] to
+show avatar for web site, or fall back to the [Favicon][] or [Gravatar][], which need a commenter's email.
 
 If niether Pavatar, Favicon or Gravatar are not enabled for 'email'
 and 'site', then algorithm fall back to the default avatar image,
@@ -31,6 +36,7 @@ Installation
                                                  # another avatar check
     AVATAR_SIZE = 50                             # avatar's size in pixels,
                                                  # all images are resized to this size.
+
 * Append `django_faces.middleware.XPavatar` line to the `MIDDLEWARE_CLASSES` to add X-Pavatar
   HTTP header or or use `{% pavatar_html_link %}` to your main template to add 'link' HTML element.
 
@@ -53,7 +59,7 @@ It is called without any parameters:
     {% load faces_tags %}
     {% author_block %}
 
-You can overload `avatars/author_block.html` template, to modify look and feel of this block.
+You can overload `faces/author_block.html` template, to modify look and feel of this block.
 This template's context contains following variables: `avatar_url`, `author_name` and `contacts_url`.
 
 ### avatar ###
@@ -70,4 +76,9 @@ django-openid:
     </div>
 
 Very simple, is't it?
+
+[django-avatar]: http://code.google.com/p/django-avatar/
+[pavatar]:  http://pavatar.com/spec/
+[gravatar]: http://gravatar.com/
+[favicon]: http://en.wikipedia.org/wiki/Favicon
 
