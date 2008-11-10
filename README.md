@@ -1,6 +1,9 @@
 django-faces
 ------------
 
+This is the django application for nonintrusive avatar support.
+It uses site's URL and user's email for autodiscovery.
+
 In opposite to [django-avatar][], this application does not allow
 users to upload their own pictures to the servers. Instead of this,
 django-faces tries to discover user's avatar using his site's URL or
