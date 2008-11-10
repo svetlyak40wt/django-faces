@@ -7,7 +7,6 @@ import urllib2
 import urlparse
 import os
 import logging
-from functools import wraps
 from pdb import set_trace
 
 import Image
@@ -29,13 +28,14 @@ from django_faces.settings import *
 logger = logging.getLogger('avatars.models')
 
 def log_exceptions(func):
-    @wraps(func)
     def wrapper(*args, **kwargs):
         try:
             return func(*args, **kwargs)
         except Exception, e:
             logger.exception('Exception during execution of %r' % func.__name__)
             raise
+    wrapper.__name__ = func.__name__
+    wrapper.__doc__ = func.__doc__
     return wrapper
 
 
