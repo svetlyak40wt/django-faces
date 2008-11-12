@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 setup(
     name = 'django-faces',
-    version = '0.1.2',
+    version = '0.1.3',
     description = '''Django application for nonintrusive avatar support.'''
                   '''It uses site's URL and user's email for autodiscovery.''',
     keywords = 'django apps avatar pavatar gravatar favicon',
@@ -9,8 +9,8 @@ setup(
     author = 'Alexander Artemenko',
     author_email = 'svetlyak.40wt@gmail.com',
     url = 'http://github.com/svetlyak40wt/django-faces/',
-    install_requires = ['PIL', 'Django>=1.0'],
-    dependency_links = ['http://aartemenko.com/media/packages.html'],
+    install_requires = ['PIL'],
+    dependency_links = ['http://pypi.aartemenko.com', 'http://aartemenko.com/media/packages.html'],
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
         'Environment :: Plugins',
