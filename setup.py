@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 setup(
     name = 'django-faces',
-    version = '0.1.3',
+    version = '0.1.4',
     description = '''Django application for nonintrusive avatar support.'''
                   '''It uses site's URL and user's email for autodiscovery.''',
     keywords = 'django apps avatar pavatar gravatar favicon',
