@@ -255,8 +255,8 @@ def get_avatar_url(email, site):
 
     if cache.enabled:
         return (urlparse.urljoin(settings.MEDIA_URL, os.path.join(AVATARS_CACHE_DIR, hash)),
-                (cache.actual_width, cache.actual_height))
-    return (None, None)
+                dict(width = cache.actual_width, height = cache.actual_height))
+    return (None, dict(width=0, height=0))
 
 def comment_postsave(sender, instance):
     hash = gen_hash(instance.author_email, instance.author_site)
