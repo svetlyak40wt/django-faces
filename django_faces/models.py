@@ -190,7 +190,7 @@ def fetch_and_save_avatar(avatar, cache):
         path = os.path.join(settings.MEDIA_ROOT, AVATARS_CACHE_DIR)
         if not os.path.exists(path):
             os.makedirs(path)
-        file = open(os.path.join(path, cache.hash), 'wb')
+        file = open(os.path.join(path, cache.hash + '.png'), 'wb')
         try:
             logging.debug('retriving avatar from %r' % avatar.geturl())
             data = StringIO(avatar.read())
@@ -198,7 +198,7 @@ def fetch_and_save_avatar(avatar, cache):
                 image = Image.open(data)
             except IOError, e:
                 logger.error('IOError when getting avatar for %s: %s' \
-                        % (site, e))
+                        % (avatar.geturl(), e))
                 cache.save()
                 return
 
@@ -257,8 +257,9 @@ def get_avatar_url(email, site):
         cache = CacheState(hash=hash)
         get_avatar(cache, site, email)
 
+    cache.save()
     if cache.enabled:
-        return (urlparse.urljoin(settings.MEDIA_URL, os.path.join(AVATARS_CACHE_DIR, hash)),
+        return (urlparse.urljoin(settings.MEDIA_URL, os.path.join(AVATARS_CACHE_DIR, hash + '.png')),
                 dict(width = cache.actual_width, height = cache.actual_height))
     return (None, dict(width=0, height=0))
 
@@ -274,5 +275,9 @@ def comment_postsave(sender, instance):
 if __name__ == 'avatars.models':
     from django.dispatch import dispatcher
     from django.db.models import signals
-    from lfcomments.models import Comment
-    dispatcher.connect(comment_postsave, signal=signals.post_save, sender=Comment)
+    try:
+        from lfcomments.models import Comment
+        dispatcher.connect(comment_postsave, signal=signals.post_save, sender=Comment)
+    except Exception, e:
+        logging.warning('post_save hook was disabled because of exception: %s' % e)
+
