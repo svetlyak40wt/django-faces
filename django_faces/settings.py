@@ -4,14 +4,16 @@ from django.conf import settings
 from django.contrib.sites.models import Site
 
 def _get_url(settings_name):
-    url = getattr(settings, settings_name, None)
-    if url is None or url.startswith('http'):
-        return url
+    def _getter():
+        url = getattr(settings, settings_name, None)
+        if url is None or url.startswith('http'):
+            return url
 
-    media_url = settings.MEDIA_URL
-    if not media_url.startswith('http'):
-        media_url = urlparse.urljoin('http://' + Site.objects.get_current().domain, media_url)
-    return urlparse.urljoin(media_url, url)
+        media_url = settings.MEDIA_URL
+        if not media_url.startswith('http'):
+            media_url = urlparse.urljoin('http://' + Site.objects.get_current().domain, media_url)
+        return urlparse.urljoin(media_url, url)
+    return _getter
 
 DONT_FETCH_LOCAL_AVATARS = getattr(settings, 'DONT_FETCH_LOCAL_AVATARS', False)
 AVATARS_CACHE_DAYS = getattr(settings, 'AVATARS_CACHE_DAYS', 1)

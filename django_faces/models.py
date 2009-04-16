@@ -68,7 +68,8 @@ def get_pavatar(site, email):
             return None
 
         if AUTHOR_AVATAR:
-            avatar = urllib2.urlopen(AUTHOR_AVATAR)
+            url = callable(AUTHOR_AVATAR) and AUTHOR_AVATAR() or AUTHOR_AVATAR
+            avatar = urllib2.urlopen(url)
 
     if avatar is None:
         source = urllib2.urlopen(site)
@@ -178,7 +179,10 @@ def get_gravatar(site, email):
 
 def get_default(site, email):
     logger.info('Getting default avatar')
-    return DEFAULT_AVATAR and urllib2.urlopen(DEFAULT_AVATAR) or None
+    if DEFAULT_AVATAR:
+        url = callable(DEFAULT_AVATAR) and DEFAULT_AVATAR() or DEFAULT_AVATAR
+        return urllib2.urlopen(url)
+    return None
 
 
 def fetch_and_save_avatar(avatar, cache):
