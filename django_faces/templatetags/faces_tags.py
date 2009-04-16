@@ -9,12 +9,12 @@ register = Library()
 
 @register.simple_tag
 def pavatar_html_link():
-    return '<link rel="pavatar" href="%s" />' % AUTHOR_AVATAR
+    return '<link rel="pavatar" href="%s" />' % AUTHOR_AVATAR()
 
 @register.inclusion_tag('faces/author_block.html')
 def author_block():
     return {
-        'avatar_url': AUTHOR_AVATAR,
+        'avatar_url': AUTHOR_AVATAR(),
         'author_name': AUTHOR_NAME,
         'contacts_url': CONTACTS_URL,
     }
