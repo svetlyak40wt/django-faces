@@ -23,7 +23,13 @@ is not realized yet.
 Dependencies
 ============
 
-This application depends on PIL -- Python Image Library.
+This application depends on PIL -- Python Image Library and PIL must be build with JPEG and
+PNG (zlib) support.
+
+On debian like systems, you need to install `python-imaging` package, or install development
+packages `libjpeg-dev` and `zlib1g-dev` (or something like that) if you wish to build
+PIL egg from the sources.
+
 
 Installation
 ============

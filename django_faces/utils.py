@@ -1,4 +1,4 @@
-import Image
+from PIL import Image
 
 def makeThumb(image, maxSize, method = 3): 
     'Resize PIL image, to fit into the maxSize'

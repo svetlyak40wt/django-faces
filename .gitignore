@@ -3,3 +3,10 @@
 build
 dist
 django_faces.egg-info
+.installed.cfg
+bin
+develop-eggs
+django_faces/migrations
+downloads
+eggs
+parts

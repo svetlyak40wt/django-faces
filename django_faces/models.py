@@ -9,7 +9,7 @@ import os
 import logging
 from pdb import set_trace
 
-import Image
+from PIL import Image
 try:
     from cStringIO import StringIO
 except ImportError:
