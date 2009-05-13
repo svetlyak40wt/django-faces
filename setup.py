@@ -1,7 +1,13 @@
+import os
+import sys
 from setuptools import setup, find_packages
+
+sys.path.insert(0, os.path.dirname(__file__))
+from django_faces import __version__ as version
+
 setup(
     name = 'django-faces',
-    version = '0.1.8',
+    version = version,
     description = '''Django application for nonintrusive avatar support.'''
                   '''It uses site's URL and user's email for autodiscovery.''',
     keywords = 'django apps avatar pavatar gravatar favicon',
