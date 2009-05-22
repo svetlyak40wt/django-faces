@@ -1,6 +1,16 @@
 ChangeLog
 =========
 
+0.1.10
+------
+
+* Fixed IntegrityError on cache saving.
+
+0.1.9
+-----§
+
+* Sphynx documentation.
+
 0.1.8
 -----
 
