@@ -15,7 +15,7 @@ try:
 except ImportError:
     from StringIO import StringIO
 
-from django.db import models
+from django.db import models, IntegrityError
 from django.shortcuts import render_to_response, get_object_or_404
 from django.utils.translation import ugettext_lazy as _
 from django.conf import settings
@@ -54,9 +54,12 @@ class CacheState(models.Model):
     size = property(_get_size, _set_size)
 
     def save(self):
-        if self.expire_after is None:
-            self.expire_after = datetime.datetime.today() + datetime.timedelta(AVATARS_CACHE_DAYS)
-        return super(CacheState, self).save()
+        try:
+            if self.expire_after is None:
+                self.expire_after = datetime.datetime.today() + datetime.timedelta(AVATARS_CACHE_DAYS)
+            return super(CacheState, self).save()
+        except IntegrityError:
+            pass
 
 
 def get_pavatar(site, email):
