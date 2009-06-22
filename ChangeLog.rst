@@ -1,13 +1,20 @@
 ChangeLog
 =========
 
+0.1.11
+------
+
+* Added some logging.
+* Added new management command 'drop_faces_cache'.
+* Plus, now avatar.html accepts MEDIA_URL in the context.
+
 0.1.10
 ------
 
 * Fixed IntegrityError on cache saving.
 
 0.1.9
------§
+-----
 
 * Sphynx documentation.
 

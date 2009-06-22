@@ -25,13 +25,12 @@ from utils import makeThumb
 from django_faces.settings import *
 
 
-logger = logging.getLogger('avatars.models')
-
 def log_exceptions(func):
     def wrapper(*args, **kwargs):
         try:
             return func(*args, **kwargs)
         except Exception, e:
+            logger = logging.getLogger('avatars.models')
             logger.exception('Exception during execution of %r' % func.__name__)
             raise
     wrapper.__name__ = func.__name__
@@ -63,7 +62,10 @@ class CacheState(models.Model):
 
 
 def get_pavatar(site, email):
+    logger = logging.getLogger('avatars.models')
     logger.info('Getting pavatar for site ' + site)
+    import socket
+    logger.info('Socket timeout: %r' % socket.getdefaulttimeout())
     avatar = None
 
     if site.startswith('http://%s' % Site.objects.get_current().domain):
@@ -116,6 +118,7 @@ def get_pavatar(site, email):
 
 
 def get_favicon(site, email):
+    logger = logging.getLogger('avatars.models')
     logger.info('Getting favicon for site ' + site)
     source = urllib2.urlopen(site)
 
@@ -164,6 +167,7 @@ def get_favicon(site, email):
     return avatar
 
 def get_gravatar(site, email):
+    logger = logging.getLogger('avatars.models')
     logger.info('Getting gravatar for email ' + email)
     fake_url = 'http://example.com'
     gravatar_options = {
@@ -181,14 +185,18 @@ def get_gravatar(site, email):
 
 
 def get_default(site, email):
+    logger = logging.getLogger('avatars.models')
     logger.info('Getting default avatar')
     avatar_url = DEFAULT_AVATAR()
+
+    logger.debug('Default avatar url is %r' % avatar_url)
     if avatar_url:
         return urllib2.urlopen(avatar_url)
     return None
 
 
 def fetch_and_save_avatar(avatar, cache):
+    logger = logging.getLogger('avatars.models')
     if avatar:
         path = os.path.join(settings.MEDIA_ROOT, AVATARS_CACHE_DIR)
         if not os.path.exists(path):
@@ -218,6 +226,7 @@ def fetch_and_save_avatar(avatar, cache):
     cache.save()
 
 def get_avatar(cache, site, email):
+    logger = logging.getLogger('avatars.models')
     cache.enabled = False
     cache.expire_after = None
 
@@ -235,8 +244,9 @@ def get_avatar(cache, site, email):
     logging.debug('Using following avatar discovery order: %r' % (AVATAR_DISCOVERY_ORDER,))
     for retriver_name in AVATAR_DISCOVERY_ORDER:
         try:
+            logger.debug('Getting avatar using %r' % retriver_name)
             avatar = avatar_retrivers.get(retriver_name, get_default)(site, email)
-            if avatar:
+            if avatar is not None:
                 fetch_and_save_avatar(avatar, cache)
                 if cache.enabled:
                     return
@@ -249,6 +259,7 @@ def gen_hash(email, site):
 
 
 def get_avatar_url(email, site):
+    logger = logging.getLogger('avatars.models')
     hash = gen_hash(email, site)
     try:
         cache = CacheState.objects.get(hash=hash)
@@ -260,10 +271,13 @@ def get_avatar_url(email, site):
         cache = CacheState(hash=hash)
         get_avatar(cache, site, email)
 
-    cache.save()
-    if cache.enabled:
-        return (urlparse.urljoin(settings.MEDIA_URL, os.path.join(AVATARS_CACHE_DIR, hash + '.png')),
-                dict(width = cache.actual_width, height = cache.actual_height))
+    try:
+        cache.save()
+        if cache.enabled:
+            return (urlparse.urljoin(settings.MEDIA_URL, os.path.join(AVATARS_CACHE_DIR, hash + '.png')),
+                    dict(width = cache.actual_width, height = cache.actual_height))
+    except Exception:
+        logger.exception("can't save avatar cache")
     return (None, dict(width=0, height=0))
 
 def comment_postsave(sender, instance):

@@ -1,5 +1,7 @@
+import logging
 import urlparse
 
+from django.conf import settings as django_settings
 from django.template import Library
 
 from django_faces.models import get_avatar_url
@@ -22,7 +24,9 @@ def author_block():
 @register.inclusion_tag('faces/avatar.html')
 def avatar(email, site):
     url, size = get_avatar_url(email, site)
+
     return {
+        'MEDIA_URL': django_settings.MEDIA_URL,
         'url': url,
         'size': size,
     }
