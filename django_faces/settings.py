@@ -27,6 +27,10 @@ AUTHOR_AVATAR = _get_url('AUTHOR_AVATAR')
 DEFAULT_AVATAR = _get_url('DEFAULT_AVATAR')
 AUTHOR_NAME = getattr(settings, 'AUTHOR_NAME', None)
 CONTACTS_URL = getattr(settings, 'CONTACTS_URL', None)
-AVATAR_DISCOVERY_ORDER = getattr(settings, 'AVATAR_DISCOVERY_ORDER', ('pavatar', 'gravatar', 'favicon', 'default'))
+AVATAR_DISCOVERY_ORDER = getattr(
+    settings,
+    'AVATAR_DISCOVERY_ORDER',
+    ('pavatar', 'gravatar', 'favicon', 'default')
+)
 # also, it can be 'monsterid' or 'identicon' or 'wavatar'
 DEFAULT_GRAVATAR = getattr(settings, 'DEFAULT_GRAVATAR', None)

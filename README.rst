@@ -94,6 +94,12 @@ django-openid::
 
 Very simple, is't it?
 
+To change avatar discovery order, set variable `AVATAR_DISCOVERY_ORDER` in your settings.py.
+By default it is a tuple ('pavatar', 'gravatar', 'favicon', 'default'), but you can use
+not only string identifiers, but also callables. Your custom function must accept `site`
+and `email` keyword arguments and return result of the call to `urllib2.urlopen` or a
+file-like object but with method geturl.
+
 .. _django-avatar: http://code.google.com/p/django-avatar/
 .. _pavatar protocol:  http://pavatar.com/spec/
 .. _gravatar: http://gravatar.com/

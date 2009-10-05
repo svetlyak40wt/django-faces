@@ -1,15 +1,17 @@
-from md5 import md5
 import datetime
+import logging
+import os
 import re
 import socket
+import types
 import urllib
 import urllib2
 import urlparse
-import os
-import logging
-from pdb import set_trace
 
+from md5 import md5
+from pdb import set_trace
 from PIL import Image
+
 try:
     from cStringIO import StringIO
 except ImportError:
@@ -22,7 +24,15 @@ from django.conf import settings
 from django.contrib.sites.models import Site
 
 from utils import makeThumb
-from django_faces.settings import *
+from django_faces.settings import \
+    AUTHOR_AVATAR, \
+    AVATAR_DISCOVERY_ORDER, \
+    AVATARS_CACHE_DAYS, \
+    AVATARS_CACHE_DIR, \
+    AVATAR_SIZE, \
+    DEFAULT_AVATAR, \
+    DEFAULT_GRAVATAR, \
+    DONT_FETCH_LOCAL_AVATARS
 
 
 def log_exceptions(func):
@@ -230,10 +240,6 @@ def get_avatar(cache, site, email):
     cache.enabled = False
     cache.expire_after = None
 
-    if site is None or site == '':
-        cache.save()
-        return
-
     avatar_retrivers = {
         'pavatar': get_pavatar,
         'gravatar': get_gravatar,
@@ -242,10 +248,17 @@ def get_avatar(cache, site, email):
     }
 
     logging.debug('Using following avatar discovery order: %r' % (AVATAR_DISCOVERY_ORDER,))
-    for retriver_name in AVATAR_DISCOVERY_ORDER:
+    for retriver in AVATAR_DISCOVERY_ORDER:
         try:
-            logger.debug('Getting avatar using %r' % retriver_name)
-            avatar = avatar_retrivers.get(retriver_name, get_default)(site, email)
+            logger.debug('Getting avatar using %r' % retriver)
+            if not callable(retriver):
+                if not isinstance(retriver, types.StringTypes):
+                    logger.error('bad retriver %s' % retriver)
+                    continue
+                retriver = avatar_retrivers.get(retriver, get_default)
+
+            avatar = retriver(site, email)
+
             if avatar is not None:
                 fetch_and_save_avatar(avatar, cache)
                 if cache.enabled:
