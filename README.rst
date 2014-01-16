@@ -105,3 +105,9 @@ file-like object but with method geturl.
 .. _gravatar: http://gravatar.com/
 .. _favicon: http://en.wikipedia.org/wiki/Favicon
 
+
+
+.. image:: https://d2weczhvl823v0.cloudfront.net/svetlyak40wt/django-faces/trend.png
+   :alt: Bitdeli badge
+   :target: https://bitdeli.com/free
+
